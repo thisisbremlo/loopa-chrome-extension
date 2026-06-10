@@ -1,7 +1,7 @@
 # 🔄 Loopa Extension
 
 <div align="center">
-  <p><strong>Browse your curated Notion design library directly from your browser via a gorgeous, high-performance drawer overlay.</strong></p>
+  <p><strong>Browse curated design tools and websites worth saving directly from your browser via a gorgeous floating drawer overlay.</strong></p>
 
   [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Add%20to%20Chrome-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/)
   [![Version](https://img.shields.io/badge/Version-1.0.0-emerald?style=for-the-badge)](#)
