@@ -12,7 +12,7 @@
   <img alt="License: source available, all rights reserved" src="https://img.shields.io/badge/License-source%20available%20%7C%20all%20rights%20reserved-111111?style=for-the-badge" />
 </p>
 
-Loopa Extension is the source-available Chrome extension add-on for [loopa.framer.websitesite](https://loopa.framer.website). It brings Loopa search, browsing, opening, and saving into the browser toolbar, without requiring the website to be opened first.
+Loopa Extension is the source-available Chrome extension add-on for [loopa.framer.website](https://loopa.framer.website). It brings Loopa search, browsing, opening, and saving into the browser toolbar, without requiring the website to be opened first.
 
 The extension opens as a floating panel on top of the active tab, keeping the Loopa collection one click away.
 
