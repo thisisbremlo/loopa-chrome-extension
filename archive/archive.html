@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loopa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="archive.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="https://loopa.framer.website" target="_blank" rel="noopener noreferrer">
+          <img src="../assets/loopa-logo.png" alt="Loopa" class="brand-logo" />
+        </a>
+        <div class="header-actions">
+          <button
+            type="button"
+            id="view-toggle"
+            class="btn btn-icon btn-toggle"
+            data-view="grid"
+            title="Grid view"
+            aria-label="Grid view. Click to switch to list."
+          >
+            <span class="view-toggle-icon" aria-hidden="true"></span>
+          </button>
+          <button
+            type="button"
+            id="refresh-btn"
+            class="btn btn-icon"
+            title="Refresh archive"
+            aria-label="Refresh archive"
+          >
+            <span class="refresh-icon" aria-hidden="true"></span>
+          </button>
+          <a
+            href="https://ko-fi.com/bremerux"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-icon"
+            title="Support me"
+            aria-label="Support me"
+          >
+            <span class="support-icon" aria-hidden="true"></span>
+          </a>
+          <button type="button" id="close-btn" class="btn btn-close embed-only" title="Close (esc)" hidden aria-label="Close">
+            <kbd class="esc-kbd">esc</kbd>
+          </button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <h1 class="hero-title">Archive</h1>
+        <p class="hero-subtitle">
+          Curated design tools & websites, updated weekly. <a href="https://loopa.framer.website" target="_blank">Open Loopa</a>
+        </p>
+      </section>
+
+      <section class="toolbar">
+        <label class="search">
+          <span class="sr-only">Search</span>
+          <span class="search-icon" id="search-icon" aria-hidden="true"></span>
+          <input type="search" id="search" placeholder="Search tools, sites…" autocomplete="off" />
+        </label>
+        <div class="filter-row">
+          <div class="filter-select">
+            <label class="sr-only" for="category-filter">Category</label>
+            <select id="category-filter" aria-label="Filter by category">
+              <option value="All">All categories</option>
+            </select>
+            <span class="filter-chevron" id="category-chevron" aria-hidden="true"></span>
+          </div>
+          <div class="filter-select">
+            <label class="sr-only" for="pricing-filter">Pricing</label>
+            <select id="pricing-filter" aria-label="Filter by pricing type">
+              <option value="All">All pricing</option>
+            </select>
+            <span class="filter-chevron" id="pricing-chevron" aria-hidden="true"></span>
+          </div>
+          <label class="filter-checkbox" title="Show only new items">
+            <input type="checkbox" id="new-filter" class="sr-only" />
+            <span class="filter-checkbox-btn">Only new</span>
+          </label>
+          <label class="filter-checkbox filter-checkbox-icon" title="Show only bookmarked items">
+            <input type="checkbox" id="bookmarks-filter" class="sr-only" />
+            <span class="filter-checkbox-btn" id="bookmarks-filter-btn"></span>
+          </label>
+        </div>
+      </section>
+
+      <main class="main-scroll">
+        <div id="status" class="status" hidden></div>
+        <div id="grid" class="grid view-grid" role="list"></div>
+      </main>
+      <div class="bottom-fade" aria-hidden="true"></div>
+    </div>
+
+    <script type="module" src="archive.js"></script>
+  </body>
+</html>
