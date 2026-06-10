@@ -1,5 +1,7 @@
 $source = $PSScriptRoot
-$version = "1.0.0"
+$manifestPath = Join-Path $source "manifest.json"
+$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+$version = $manifest.version
 $dest = Join-Path $source "loopa-extension-v$version.zip"
 $temp = Join-Path $env:TEMP "loopa-build"
 
@@ -62,7 +64,7 @@ $excludeFiles = @(
 )
 
 # Copy manifest
-Copy-Item (Join-Path $source "manifest.json") -Destination $temp
+Copy-Item $manifestPath -Destination $temp
 
 # Copy directories
 foreach ($dir in $includeDirs) {

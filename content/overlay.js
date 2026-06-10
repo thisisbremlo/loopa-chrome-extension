@@ -1,9 +1,14 @@
 (function () {
   const ROOT_ID = "loopa-archive-root";
+  const CLEANUP_KEY = "__loopaArchiveCleanup";
 
   const existing = document.getElementById(ROOT_ID);
   if (existing) {
-    existing.remove();
+    if (globalThis[CLEANUP_KEY]) {
+      globalThis[CLEANUP_KEY]();
+    } else {
+      existing.remove();
+    }
     return;
   }
 
@@ -61,23 +66,34 @@
     </div>
   `;
 
-  shadow.querySelector(".backdrop").addEventListener("click", () => host.remove());
+  const iframe = shadow.querySelector("iframe");
+
+  function closeOverlay() {
+    host.remove();
+    document.removeEventListener("keydown", onKey);
+    window.removeEventListener("message", onMessage);
+    if (globalThis[CLEANUP_KEY] === closeOverlay) {
+      delete globalThis[CLEANUP_KEY];
+    }
+  }
 
   function onKey(e) {
     if (e.key === "Escape" && document.getElementById(ROOT_ID)) {
-      host.remove();
-      document.removeEventListener("keydown", onKey);
+      closeOverlay();
     }
   }
-  document.addEventListener("keydown", onKey);
 
   function onMessage(event) {
+    if (event.source !== iframe?.contentWindow) return;
     if (event.data?.type === "loopa-archive-close") {
-      host.remove();
-      window.removeEventListener("message", onMessage);
+      closeOverlay();
     }
   }
+
+  shadow.querySelector(".backdrop").addEventListener("click", closeOverlay);
+  document.addEventListener("keydown", onKey);
   window.addEventListener("message", onMessage);
+  globalThis[CLEANUP_KEY] = closeOverlay;
 
   document.documentElement.appendChild(host);
 })();

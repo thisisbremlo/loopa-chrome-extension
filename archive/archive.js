@@ -14,7 +14,17 @@ if (isEmbed) {
   document.documentElement.classList.add("embed");
   document.getElementById("close-btn")?.removeAttribute("hidden");
 
-  const closeFn = () => parent.postMessage({ type: "loopa-archive-close" }, "*");
+  const parentOrigin = (() => {
+    try {
+      const origin = document.referrer ? new URL(document.referrer).origin : "";
+      return origin && origin !== "null" ? origin : "*";
+    } catch {
+      return "*";
+    }
+  })();
+
+  const closeFn = () =>
+    parent.postMessage({ type: "loopa-archive-close" }, parentOrigin);
   
   document.getElementById("close-btn")?.addEventListener("click", closeFn);
   
@@ -204,23 +214,25 @@ function renderCard(item) {
   ].join("");
 
   return `
-    <a class="card" role="listitem" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
-      <div class="cover-wrap">
-        ${coverBlock}
-        ${flags ? `<div class="card-badges">${flags}</div>` : ""}
-      </div>
-      <div class="card-body">
-        <div class="card-title-row">
-          <img class="favicon is-loading" src="${escapeHtml(item.favicon)}" alt="" width="22" height="22" loading="lazy" decoding="async" />
-          <h2>${escapeHtml(item.title)}</h2>
-          <button type="button" class="bookmark-btn ${bookmarkedIds.has(item.id) ? "is-active" : ""}" data-id="${escapeHtml(item.id)}" title="${bookmarkedIds.has(item.id) ? "Remove bookmark" : "Add bookmark"}" aria-label="Toggle bookmark">
-            ${iconifyIcon(bookmarkedIds.has(item.id) ? "bookmarkSolid" : "bookmark", 16)}
-          </button>
+    <div class="card" role="listitem">
+      <a class="card-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="cover-wrap">
+          ${coverBlock}
+          ${flags ? `<div class="card-badges">${flags}</div>` : ""}
         </div>
-        ${item.description ? `<p class="description">${escapeHtml(item.description)}</p>` : ""}
-        ${meta ? `<div class="meta">${meta}</div>` : ""}
-      </div>
-    </a>
+        <div class="card-body">
+          <div class="card-title-row">
+            <img class="favicon is-loading" src="${escapeHtml(item.favicon)}" alt="" width="22" height="22" loading="lazy" decoding="async" />
+            <h2>${escapeHtml(item.title)}</h2>
+          </div>
+          ${item.description ? `<p class="description">${escapeHtml(item.description)}</p>` : ""}
+          ${meta ? `<div class="meta">${meta}</div>` : ""}
+        </div>
+      </a>
+      <button type="button" class="bookmark-btn ${bookmarkedIds.has(item.id) ? "is-active" : ""}" data-id="${escapeHtml(item.id)}" title="${bookmarkedIds.has(item.id) ? "Remove bookmark" : "Add bookmark"}" aria-label="${bookmarkedIds.has(item.id) ? "Remove bookmark" : "Add bookmark"}">
+        ${iconifyIcon(bookmarkedIds.has(item.id) ? "bookmarkSolid" : "bookmark", 16)}
+      </button>
+    </div>
   `;
 }
 
@@ -345,11 +357,13 @@ gridEl.addEventListener("click", async (e) => {
     btn.classList.remove("is-active");
     btn.innerHTML = iconifyIcon("bookmark", 16);
     btn.title = "Add bookmark";
+    btn.setAttribute("aria-label", "Add bookmark");
   } else {
     bookmarkedIds.add(id);
     btn.classList.add("is-active");
     btn.innerHTML = iconifyIcon("bookmarkSolid", 16);
     btn.title = "Remove bookmark";
+    btn.setAttribute("aria-label", "Remove bookmark");
   }
 
   await setBookmarks(Array.from(bookmarkedIds));

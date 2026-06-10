@@ -5,7 +5,9 @@
   "description": "Browse websites worth saving directly in the official Loopa browser extension.",
   "permissions": ["storage", "scripting", "activeTab"],
   "host_permissions": [
-    "https://*.workers.dev/*"
+    "https://*.workers.dev/*",
+    "http://127.0.0.1:8787/*",
+    "http://localhost:8787/*"
   ],
   "action": {
     "default_title": "Open Loopa",

@@ -1,71 +1,76 @@
-# Loopa Archive API (Cloudflare Worker)
+# Loopa Archive API
 
-Proxies Notion so the integration token **never ships in the browser extension**.
+Maintainer-only Cloudflare Worker used by the Loopa extension. It returns Loopa archive data as JSON for the extension.
 
-## One-time setup
+This is project infrastructure for Loopa. Extension users do not configure or access the underlying content database.
 
-### 1. Install Wrangler
+## Setup
 
-```bash
-cd worker
+```powershell
 npm install
+Copy-Item .dev.vars.example .dev.vars
 ```
 
-### 2. Local secrets
+Fill `.dev.vars`:
 
-```bash
-copy .dev.vars.example .dev.vars
+```env
+NOTION_TOKEN=secret_or_ntn_value
+NOTION_DATABASE_ID=loopa_database_id
+LOOPA_API_KEY=
 ```
 
-Edit `.dev.vars` with your Notion integration token and database ID.
+`LOOPA_API_KEY` is optional. If set, the extension must send the same value in `lib/api-config.js`.
 
-### 3. Local dev
+## Local Development
 
-```bash
+```powershell
 npm run dev
 ```
 
-Extension `lib/api-config.js` should point to `http://127.0.0.1:8787` (default).
+Use these URLs for quick checks:
 
-### 4. Deploy to Cloudflare
+```text
+http://127.0.0.1:8787/health
+http://127.0.0.1:8787/api/archive
+```
 
-```bash
+For local extension testing, set:
+
+```js
+export const LOOPA_API_BASE = "http://127.0.0.1:8787";
+export const LOOPA_API_KEY = "";
+```
+
+## Deploy
+
+```powershell
 npx wrangler login
 npx wrangler secret put NOTION_TOKEN
 npx wrangler secret put NOTION_DATABASE_ID
-```
-
-Optional abuse protection:
-
-```bash
-npx wrangler secret put LOOPA_API_KEY
-```
-
-Then deploy:
-
-```bash
 npm run deploy
 ```
 
-Copy the URL (e.g. `https://loopa-archive-api.your-name.workers.dev`) into the extension:
+Optional API key:
 
-```bash
-copy ..\lib\api-config.example.js ..\lib\api-config.js
+```powershell
+npx wrangler secret put LOOPA_API_KEY
 ```
 
-Set `LOOPA_API_BASE` to your Worker URL. If you set `LOOPA_API_KEY` on the Worker, add the same value to `LOOPA_API_KEY` in `api-config.js`.
-
-### 5. Rotate your Notion token
-
-If the token was ever committed to git or shared in chat, create a new one at [Notion integrations](https://www.notion.so/profile/integrations) and update the Worker secret.
+After deploy, copy the Worker URL into `lib/api-config.js`.
 
 ## Endpoints
 
 | Path | Method | Description |
-|------|--------|-------------|
+| ---- | ------ | ----------- |
 | `/health` | GET | Health check |
-| `/api/archive` | GET | Full archive as JSON `{ items: [...] }` |
+| `/api/archive` | GET | Archive JSON: `{ "items": [...] }` |
 
-## Optional: rate limiting
+## Troubleshooting
 
-In the Cloudflare dashboard → your Worker → Settings → add rate limiting rules or use Cloudflare WAF on the route.
+| Problem | Check |
+| ------- | ----- |
+| `Worker missing NOTION_TOKEN or NOTION_DATABASE_ID secrets.` | `.dev.vars` or Cloudflare secrets are missing |
+| Notion 401 | Token is wrong or expired |
+| Notion 404 | Database ID is wrong or the integration is not connected |
+| Extension 401 | `LOOPA_API_KEY` differs between Worker and extension |
+| Extension fetch/CORS error | `LOOPA_API_BASE` does not match the local or deployed Worker URL |

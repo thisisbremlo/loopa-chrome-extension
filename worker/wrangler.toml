@@ -6,7 +6,7 @@ compatibility_date = "2024-12-01"
 #   NOTION_TOKEN
 #   NOTION_DATABASE_ID
 # Optional:
-#   LOOPA_API_KEY — if set, extension must send X-Loopa-Key header
+#   LOOPA_API_KEY - if set, extension must send X-Loopa-Key header
 
 [observability]
 enabled = true
