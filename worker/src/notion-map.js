@@ -7,7 +7,7 @@ const SETTINGS = {
   descriptionProperty: "Hover Description",
   subcategoryProperty: "Subcategory",
   pricingProperty: "Pricing Type",
-  coverProperty: "Cover Image",
+  coverProperty: "thumbnailUrl",
 };
 
 function extractPlainText(richText = []) {
@@ -61,12 +61,30 @@ function readDescription(prop) {
   return "";
 }
 
-function readCoverImage(prop) {
-  if (!prop || prop.type !== "files") return "";
+function normalizeImageUrl(value) {
+  const url = String(value ?? "").trim();
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? url : "";
+  } catch {
+    return "";
+  }
+}
+
+function readImageUrl(prop) {
+  if (!prop) return "";
+  if (prop.type === "url") return normalizeImageUrl(prop.url);
+  if (prop.type === "rich_text") return normalizeImageUrl(extractPlainText(prop.rich_text));
+  if (prop.type === "formula" && prop.formula?.type === "string") {
+    return normalizeImageUrl(prop.formula.string);
+  }
+  if (prop.type !== "files") return "";
+
   const file = prop.files?.[0];
   if (!file) return "";
-  if (file.type === "file") return file.file?.url ?? "";
-  if (file.type === "external") return file.external?.url ?? "";
+  if (file.type === "file") return normalizeImageUrl(file.file?.url);
+  if (file.type === "external") return normalizeImageUrl(file.external?.url);
   return "";
 }
 
@@ -91,8 +109,12 @@ export function mapPageToItem(page) {
   const description = readDescription(
     getProp(properties, "descriptionProperty", ["Hover Description"], "rich_text")?.[1]
   );
-  const coverImage = readCoverImage(
-    getProp(properties, "coverProperty", ["Cover Image"], "files")?.[1]
+  const coverImage = readImageUrl(
+    getProp(
+      properties,
+      "coverProperty",
+      ["thumbnailUrl", "Thumbnail URL", "Thumbnail", "Cover Image"]
+    )?.[1]
   );
   const isNew = readCheckbox(
     pickProperty(properties, ["New", "Is New"], "checkbox")?.[1]
