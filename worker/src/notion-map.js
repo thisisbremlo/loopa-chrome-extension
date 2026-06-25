@@ -2,7 +2,7 @@ const NOTION_VERSION = "2022-06-28";
 
 const SETTINGS = {
   titleProperty: "Title",
-  urlProperty: "External Link",
+  urlProperty: "externalLink",
   categoryProperty: "Category",
   descriptionProperty: "Hover Description",
   subcategoryProperty: "Subcategory",
@@ -95,7 +95,7 @@ export function mapPageToItem(page) {
     getProp(properties, "titleProperty", ["Title", "Name"], "title")?.[1]
   );
   const url = readUrl(
-    getProp(properties, "urlProperty", ["External Link", "URL"], "url")?.[1]
+    getProp(properties, "urlProperty", ["externalLink", "External Link", "URL"], "url")?.[1]
   );
   const category = readSelect(
     getProp(properties, "categoryProperty", ["Category"], "select")?.[1]
