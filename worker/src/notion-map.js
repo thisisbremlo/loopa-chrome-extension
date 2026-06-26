@@ -1,12 +1,12 @@
 const NOTION_VERSION = "2022-06-28";
 
 const SETTINGS = {
-  titleProperty: "Title",
+  titleProperty: "title",
   urlProperty: "externalLink",
-  categoryProperty: "Category",
-  descriptionProperty: "Hover Description",
-  subcategoryProperty: "Subcategory",
-  pricingProperty: "Pricing Type",
+  categoryProperty: "category",
+  descriptionProperty: "hover_description",
+  subcategoryProperty: "subcategory",
+  pricingProperty: "pricing-type",
   coverProperty: "thumbnailUrl",
 };
 
@@ -14,10 +14,22 @@ function extractPlainText(richText = []) {
   return richText.map((t) => t.plain_text).join("").trim();
 }
 
+function normalizePropertyName(name) {
+  return String(name ?? "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+}
+
+function propertyNameMatches(actual, expected) {
+  return normalizePropertyName(actual) === normalizePropertyName(expected);
+}
+
 function pickProperty(properties, preferredNames, typeFilter) {
   const entries = Object.entries(properties ?? {});
   for (const name of preferredNames) {
-    const key = entries.find(([k]) => k.toLowerCase() === name.toLowerCase());
+    const key =
+      entries.find(([k]) => k === name) ??
+      entries.find(([k]) => propertyNameMatches(k, name));
     if (key && (!typeFilter || key[1].type === typeFilter)) return key;
   }
   if (typeFilter) {
@@ -26,10 +38,32 @@ function pickProperty(properties, preferredNames, typeFilter) {
   return null;
 }
 
-function getProp(properties, settingKey, fallbackNames, typeFilter) {
+function pickNamedProperty(properties, preferredNames, typeFilter) {
+  const entries = Object.entries(properties ?? {});
+  for (const name of preferredNames) {
+    const key =
+      entries.find(([k]) => k === name) ??
+      entries.find(([k]) => propertyNameMatches(k, name));
+    if (key && (!typeFilter || key[1].type === typeFilter)) return key;
+  }
+  return null;
+}
+
+function getProp(
+  properties,
+  settingKey,
+  fallbackNames,
+  typeFilter,
+  { allowTypeFallback = true } = {}
+) {
   const custom = SETTINGS[settingKey];
-  if (custom && properties[custom]) return [custom, properties[custom]];
-  return pickProperty(properties, fallbackNames, typeFilter);
+  const customProp = custom
+    ? pickNamedProperty(properties, [custom], typeFilter)
+    : null;
+  if (customProp) return customProp;
+  return allowTypeFallback
+    ? pickProperty(properties, fallbackNames, typeFilter)
+    : pickNamedProperty(properties, fallbackNames, typeFilter);
 }
 
 function readTitle(prop) {
@@ -47,6 +81,11 @@ function readUrl(prop) {
 function readSelect(prop) {
   if (!prop) return "";
   if (prop.type === "select") return prop.select?.name ?? "";
+  if (prop.type === "status") return prop.status?.name ?? "";
+  if (prop.type === "rich_text") return extractPlainText(prop.rich_text);
+  if (prop.type === "formula" && prop.formula?.type === "string") {
+    return prop.formula.string ?? "";
+  }
   return "";
 }
 
@@ -58,6 +97,9 @@ function readCheckbox(prop) {
 function readDescription(prop) {
   if (!prop) return "";
   if (prop.type === "rich_text") return extractPlainText(prop.rich_text);
+  if (prop.type === "formula" && prop.formula?.type === "string") {
+    return prop.formula.string ?? "";
+  }
   return "";
 }
 
@@ -107,35 +149,70 @@ export function mapPageToItem(page) {
   const { properties } = page;
 
   const title = readTitle(
-    getProp(properties, "titleProperty", ["Title", "Name"], "title")?.[1]
+    getProp(properties, "titleProperty", ["title", "Title", "Name"], "title")?.[1]
   );
   const url = readUrl(
-    getProp(properties, "urlProperty", ["externalLink", "External Link", "URL"], "url")?.[1]
+    getProp(
+      properties,
+      "urlProperty",
+      ["externalLink", "external-link", "External Link", "URL"],
+      "url"
+    )?.[1]
   );
   const category = readSelect(
-    getProp(properties, "categoryProperty", ["Category"], "select")?.[1]
+    getProp(properties, "categoryProperty", ["category", "Category"], undefined, {
+      allowTypeFallback: false,
+    })?.[1]
   );
   const subcategory = readSelect(
-    getProp(properties, "subcategoryProperty", ["Subcategory"], "select")?.[1]
+    getProp(
+      properties,
+      "subcategoryProperty",
+      ["subcategory", "Subcategory"],
+      undefined,
+      {
+        allowTypeFallback: false,
+      }
+    )?.[1]
   );
   const pricing = readSelect(
-    getProp(properties, "pricingProperty", ["Pricing Type"], "select")?.[1]
+    getProp(
+      properties,
+      "pricingProperty",
+      ["pricing-type", "pricing_type", "Pricing Type"],
+      undefined,
+      {
+        allowTypeFallback: false,
+      }
+    )?.[1]
   );
   const description = readDescription(
-    getProp(properties, "descriptionProperty", ["Hover Description"], "rich_text")?.[1]
+    getProp(
+      properties,
+      "descriptionProperty",
+      ["hover_description", "hover-description", "Hover Description", "meta-description"],
+      undefined,
+      {
+        allowTypeFallback: false,
+      }
+    )?.[1]
   );
   const coverImage = readImageUrl(
     getProp(
       properties,
       "coverProperty",
-      ["thumbnailUrl", "Thumbnail URL", "Thumbnail", "Cover Image"]
+      ["thumbnailUrl", "thumbnail-url", "Thumbnail URL", "Thumbnail", "Cover Image"]
     )?.[1]
   );
   const isNew = readCheckbox(
-    pickProperty(properties, ["New", "Is New"], "checkbox")?.[1]
+    pickNamedProperty(properties, ["is-new", "is_new", "New", "Is New"], "checkbox")?.[1]
   );
   const isSponsored = readCheckbox(
-    pickProperty(properties, ["Sponsored", "Is Sponsored"], "checkbox")?.[1]
+    pickNamedProperty(
+      properties,
+      ["is-sponsored", "is_sponsored", "Sponsored", "Is Sponsored"],
+      "checkbox"
+    )?.[1]
   );
   const slug = normalizeSlug(
     readString(
