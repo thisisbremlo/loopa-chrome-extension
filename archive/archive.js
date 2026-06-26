@@ -1,5 +1,11 @@
 import { queryArchive } from "../lib/notion.js";
-import { getSettings, isConfigured, getBookmarks, setBookmarks } from "../lib/storage.js";
+import { getSettings, isConfigured } from "../lib/storage.js";
+import {
+  getExtensionSavedSlugs,
+  normalizeSlug,
+  setExtensionSavedSlugs,
+} from "../lib/saved-storage.js";
+import { api } from "../lib/browser-api.js";
 import {
   getViewMode,
   setViewMode,
@@ -67,7 +73,7 @@ let allItems = [];
 let activeCategory = "All";
 let activePricing = "All";
 let viewMode = VIEW_GRID;
-let bookmarkedIds = new Set();
+let savedSlugs = new Set();
 
 function showStatus(message, type = "loading") {
   statusEl.hidden = false;
@@ -87,6 +93,89 @@ function escapeHtml(value) {
     .replaceAll("<", "&#60;")
     .replaceAll(">", "&#62;")
     .replaceAll('"', "&#34;");
+}
+
+function slugify(value) {
+  return normalizeSlug(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getHostnameSlug(item) {
+  const hostname = normalizeSlug(item?.hostname);
+  const source = hostname || (() => {
+    try {
+      return item?.url ? new URL(item.url).hostname : "";
+    } catch {
+      return "";
+    }
+  })();
+
+  return slugify(source.replace(/^www\./, "").split(".")[0]);
+}
+
+function getItemSlugCandidates(item) {
+  const candidates = [
+    item?.slug,
+    item?.cmsSlug,
+    item?.framerCMSSlug,
+    slugify(item?.title),
+    getHostnameSlug(item),
+    item?.id,
+  ];
+  const seen = new Set();
+  return candidates
+    .map(normalizeSlug)
+    .filter((slug) => {
+      if (!slug || seen.has(slug)) return false;
+      seen.add(slug);
+      return true;
+    });
+}
+
+function getItemSavedSlug(item) {
+  const candidates = getItemSlugCandidates(item);
+  return candidates.find((slug) => savedSlugs.has(slug)) ?? candidates[0] ?? "";
+}
+
+function getItemLegacyId(item) {
+  return normalizeSlug(item?.notionId ?? item?.id);
+}
+
+function isItemSaved(item) {
+  const legacyId = getItemLegacyId(item);
+  return Boolean(
+    getItemSlugCandidates(item).some((slug) => savedSlugs.has(slug)) ||
+      (legacyId && savedSlugs.has(legacyId))
+  );
+}
+
+async function syncSavedSlugsToActiveLoopaTab(slugs) {
+  try {
+    await api.runtime.sendMessage({
+      type: "loopa:broadcast-saved-slugs",
+      slugs,
+    });
+  } catch {
+    /* the active tab may not be a Loopa page */
+  }
+}
+
+async function getActiveLoopaSavedSlugs() {
+  try {
+    const response = await api.runtime.sendMessage({
+      type: "loopa:read-saved-slugs",
+    });
+    return response?.ok && Array.isArray(response.slugs)
+      ? response.slugs
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function applyViewMode(mode) {
@@ -171,7 +260,7 @@ function filterItems() {
     if (activeCategory !== "All" && item.category !== activeCategory) return false;
     if (activePricing !== "All" && item.pricing !== activePricing) return false;
     if (newFilterEl && newFilterEl.checked && !item.isNew) return false;
-    if (bookmarksFilterEl && bookmarksFilterEl.checked && !bookmarkedIds.has(item.id)) return false;
+    if (bookmarksFilterEl && bookmarksFilterEl.checked && !isItemSaved(item)) return false;
     if (!q) return true;
     const haystack = [
       item.title,
@@ -189,6 +278,9 @@ function filterItems() {
 }
 
 function renderCard(item) {
+  const saved = isItemSaved(item);
+  const savedSlug = getItemSavedSlug(item);
+  const legacyId = getItemLegacyId(item);
   const coverBlock = item.coverImage
     ? `
         <div class="cover-skeleton" aria-hidden="true"></div>
@@ -229,8 +321,8 @@ function renderCard(item) {
           ${meta ? `<div class="meta">${meta}</div>` : ""}
         </div>
       </a>
-      <button type="button" class="bookmark-btn ${bookmarkedIds.has(item.id) ? "is-active" : ""}" data-id="${escapeHtml(item.id)}" title="${bookmarkedIds.has(item.id) ? "Remove bookmark" : "Add bookmark"}" aria-label="${bookmarkedIds.has(item.id) ? "Remove bookmark" : "Add bookmark"}">
-        ${iconifyIcon(bookmarkedIds.has(item.id) ? "bookmarkSolid" : "bookmark", 16)}
+      <button type="button" class="bookmark-btn ${saved ? "is-active" : ""}" data-slug="${escapeHtml(savedSlug)}" data-legacy-id="${escapeHtml(legacyId)}" title="${saved ? "Remove bookmark" : "Add bookmark"}" aria-label="${saved ? "Remove bookmark" : "Add bookmark"}">
+        ${iconifyIcon(saved ? "bookmarkSolid" : "bookmark", 16)}
       </button>
     </div>
   `;
@@ -297,12 +389,16 @@ async function loadArchive() {
 
   try {
     const settings = await getSettings();
-    const [items, bookmarks] = await Promise.all([
+    const [items, extensionSlugs, activeTabSlugs] = await Promise.all([
       queryArchive(settings),
-      getBookmarks()
+      getExtensionSavedSlugs(),
+      getActiveLoopaSavedSlugs()
     ]);
+    const bookmarks = activeTabSlugs
+      ? await setExtensionSavedSlugs(activeTabSlugs)
+      : extensionSlugs;
     allItems = items;
-    bookmarkedIds = new Set(bookmarks);
+    savedSlugs = new Set(bookmarks);
     hideStatus();
     activeCategory = "All";
     activePricing = "All";
@@ -349,24 +445,28 @@ gridEl.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  const id = btn.dataset.id;
-  if (!id) return;
+  const slug = normalizeSlug(btn.dataset.slug);
+  const legacyId = normalizeSlug(btn.dataset.legacyId);
+  if (!slug) return;
 
-  if (bookmarkedIds.has(id)) {
-    bookmarkedIds.delete(id);
+  if (savedSlugs.has(slug) || (legacyId && savedSlugs.has(legacyId))) {
+    savedSlugs.delete(slug);
+    if (legacyId) savedSlugs.delete(legacyId);
     btn.classList.remove("is-active");
     btn.innerHTML = iconifyIcon("bookmark", 16);
     btn.title = "Add bookmark";
     btn.setAttribute("aria-label", "Add bookmark");
   } else {
-    bookmarkedIds.add(id);
+    savedSlugs.add(slug);
     btn.classList.add("is-active");
     btn.innerHTML = iconifyIcon("bookmarkSolid", 16);
     btn.title = "Remove bookmark";
     btn.setAttribute("aria-label", "Remove bookmark");
   }
 
-  await setBookmarks(Array.from(bookmarkedIds));
+  const nextSlugs = await setExtensionSavedSlugs(Array.from(savedSlugs));
+  savedSlugs = new Set(nextSlugs);
+  await syncSavedSlugsToActiveLoopaTab(nextSlugs);
   
   if (bookmarksFilterEl && bookmarksFilterEl.checked) {
     renderItems(filterItems());

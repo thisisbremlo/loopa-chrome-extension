@@ -61,6 +61,21 @@ function readDescription(prop) {
   return "";
 }
 
+function readString(prop) {
+  if (!prop) return "";
+  if (prop.type === "rich_text") return extractPlainText(prop.rich_text);
+  if (prop.type === "title") return extractPlainText(prop.title);
+  if (prop.type === "url") return prop.url ?? "";
+  if (prop.type === "formula" && prop.formula?.type === "string") {
+    return prop.formula.string ?? "";
+  }
+  return "";
+}
+
+function normalizeSlug(value) {
+  return String(value ?? "").trim();
+}
+
 function normalizeImageUrl(value) {
   const url = String(value ?? "").trim();
   if (!url) return "";
@@ -122,6 +137,14 @@ export function mapPageToItem(page) {
   const isSponsored = readCheckbox(
     pickProperty(properties, ["Sponsored", "Is Sponsored"], "checkbox")?.[1]
   );
+  const slug = normalizeSlug(
+    readString(
+      pickProperty(
+        properties,
+        ["slug", "Slug", "CMS Slug", "Framer CMS Slug", "framerCMSSlug"]
+      )?.[1]
+    )
+  );
 
   let hostname = "";
   try {
@@ -131,7 +154,11 @@ export function mapPageToItem(page) {
   }
 
   return {
-    id: page.id,
+    id: slug || page.id,
+    notionId: page.id,
+    slug,
+    cmsSlug: slug,
+    framerCMSSlug: slug,
     title: title || hostname || "Untitled",
     url,
     category,

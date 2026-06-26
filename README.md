@@ -106,6 +106,12 @@ Click the Loopa icon on any regular webpage to open or close the panel.
 
 ## Packaging
 
+Before pushing or publishing, bump the version in `manifest.json`:
+
+- Big updates: bump the first number, for example `2.0.0` (`v2`).
+- Small fixes or feature updates: bump the second number, for example `2.2.0` (`v2.2`).
+- Hot fixes: bump the third number, for example `2.2.2`.
+
 Run the build script from the project root:
 
 ```powershell

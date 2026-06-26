@@ -1,13 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Loopa",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "description": "Browse websites worth saving directly in the official Loopa browser extension.",
   "permissions": ["storage", "scripting", "activeTab"],
   "host_permissions": [
+    "https://loopa.framer.website/*",
     "https://*.workers.dev/*",
     "http://127.0.0.1:8787/*",
     "http://localhost:8787/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://loopa.framer.website/*"],
+      "js": ["content/saved-sync.js"],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_title": "Open Loopa",
