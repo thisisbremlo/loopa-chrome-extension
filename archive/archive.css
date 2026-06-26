@@ -23,7 +23,7 @@
   --space-7: 32px;
   --space-8: 40px;
   --page-x: 20px;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 *,
@@ -60,7 +60,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -97,7 +97,7 @@ html.embed .app {
   border: 0;
 }
 
-/* ─── Header ─── */
+/* Header */
 .header {
   display: flex;
   align-items: center;
@@ -232,7 +232,7 @@ html.embed .app {
   }
 }
 
-/* ─── Hero ─── */
+/* Hero */
 .hero {
   padding: 0 var(--page-x) var(--space-4);
   flex-shrink: 0;
@@ -279,7 +279,7 @@ html.embed .hero-title {
   border-color: var(--text-muted);
 }
 
-/* ─── Toolbar ─── */
+/* Toolbar */
 .toolbar {
   padding: 0 var(--page-x) var(--space-4);
   flex-shrink: 0;
@@ -414,7 +414,7 @@ html.embed .hero-title {
   border-color: var(--accent);
 }
 
-/* ─── Bottom fade ─── */
+/* Bottom fade */
 .bottom-fade {
   position: absolute;
   bottom: 0;
@@ -442,7 +442,7 @@ html.embed .hero-title {
   background: linear-gradient(to top, var(--bg) 8%, transparent 100%);
 }
 
-/* ─── Main scroll area ─── */
+/* Main scroll area */
 .main-scroll {
   flex: 1;
   min-height: 0;
@@ -469,7 +469,7 @@ html.embed .hero-title {
   color: #e88;
 }
 
-/* ─── Grid & cards ─── */
+/* Grid and cards */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

@@ -383,7 +383,7 @@ async function loadArchive() {
     return;
   }
 
-  showStatus("Loading finds…", "loading");
+  showStatus("Loading finds...", "loading");
   refreshBtn.disabled = true;
   refreshBtn.classList.add("is-spinning");
 
