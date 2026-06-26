@@ -75,6 +75,55 @@ let activePricing = "All";
 let viewMode = VIEW_GRID;
 let savedSlugs = new Set();
 
+const PRICING_LABELS = new Set([
+  "free",
+  "paid",
+  "freemium",
+  "free trial",
+  "trial",
+  "open source",
+]);
+
+function normalizeComparableLabel(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function normalizeFlag(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value !== "string") return false;
+
+  const normalized = value.trim().toLowerCase();
+  return ["1", "true", "yes", "new", "sponsored"].includes(normalized);
+}
+
+function normalizePricing(item) {
+  const pricing = String(item?.pricing ?? "").trim();
+  if (!pricing) return "";
+
+  const normalizedPricing = normalizeComparableLabel(pricing);
+  if (!PRICING_LABELS.has(normalizedPricing)) {
+    return "";
+  }
+
+  const category = normalizeComparableLabel(item?.category);
+  const subcategory = normalizeComparableLabel(item?.subcategory);
+  if (normalizedPricing === category || normalizedPricing === subcategory) {
+    return "";
+  }
+
+  return pricing;
+}
+
+function normalizeArchiveItem(item) {
+  return {
+    ...item,
+    pricing: normalizePricing(item),
+    isNew: normalizeFlag(item?.isNew),
+    isSponsored: normalizeFlag(item?.isSponsored),
+  };
+}
+
 function showStatus(message, type = "loading") {
   statusEl.hidden = false;
   statusEl.textContent = message;
@@ -397,7 +446,7 @@ async function loadArchive() {
     const bookmarks = activeTabSlugs
       ? await setExtensionSavedSlugs(activeTabSlugs)
       : extensionSlugs;
-    allItems = items;
+    allItems = items.map(normalizeArchiveItem);
     savedSlugs = new Set(bookmarks);
     hideStatus();
     activeCategory = "All";
