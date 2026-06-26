@@ -1,10 +1,12 @@
 {
   "name": "loopa-archive-api",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "test": "node src/notion-map.test.mjs",
     "tail": "wrangler tail"
   },
   "devDependencies": {
